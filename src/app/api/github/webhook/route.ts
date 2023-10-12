@@ -127,9 +127,12 @@ export async function POST(req: NextRequest) {
       payload: await req.text(),
     });
     console.log("verified and processed");
-    return NextResponse.json({}, { status: 200 });
+    return NextResponse.json(
+      { result: "worked great woptydoo" },
+      { status: 200 }
+    );
   } catch (error) {
     console.log(error);
-    return NextResponse.json({}, { status: 500 });
+    return NextResponse.json({ result: "failed woptydoo" }, { status: 500 });
   }
 }
