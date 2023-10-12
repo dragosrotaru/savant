@@ -9,8 +9,8 @@ function isTypeScriptFile(filePath: string) {
   return tsFileRegex.test(filePath);
 }
 
-app.webhooks.onError(() => {
-  return NextResponse.error();
+app.webhooks.onError((error) => {
+  console.log(error);
 });
 
 app.webhooks.on("push", async (evt) => {
@@ -109,8 +109,8 @@ export async function POST(req: NextRequest) {
       name: req.headers.get("x-github-event") as WebhookEventName,
       payload: await req.text(),
     });
-    return NextResponse.next();
+    return NextResponse.json({}, { status: 200 });
   } catch (error) {
-    return NextResponse.error();
+    return NextResponse.json({}, { status: 500 });
   }
 }
