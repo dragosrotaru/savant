@@ -9,7 +9,7 @@ export default function Setup() {
 
   useEffect(() => {
     // Use the fetch API to make an HTTP GET request to an external API
-    fetch("/api/repositories?installation_id=" + installationId)
+    fetch("/api/github/repositories?installation_id=" + installationId)
       .then((response) => response.json())
       .then((data) => {
         setData(data);
