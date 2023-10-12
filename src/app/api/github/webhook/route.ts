@@ -19,9 +19,14 @@ app.webhooks.on("push", async (evt) => {
   const { owner } = repository;
   const octokit = evt.octokit;
 
+  // todo create better branch names
+  const branchName = "savant/quickfix"; // Name of the branch for the fix
+
   // todo only continue if on repositories/branches enabled by user
   // todo only continue if rate limits not surpassed
   // todo only continue if user credits not consumed
+
+  console.log("one");
 
   // Loop through the commits in the push event
 
@@ -35,12 +40,16 @@ app.webhooks.on("push", async (evt) => {
       // Only typescript is supported
       if (!isTypeScriptFile(path)) return;
 
+      console.log("two");
+
       // Get the current file contents
       const content = await octokit.rest.repos.getContent({
         owner: owner.login,
         repo: repository.name,
         path: path,
       });
+
+      console.log("thre");
 
       // Get Changes to code by ChatGPT
       const result = await requestCode(
@@ -52,7 +61,9 @@ app.webhooks.on("push", async (evt) => {
           `
       );
 
-      if (!result.code) return;
+      console.log("four");
+
+      if (!result.code) continue;
 
       const newContent = result.code;
       // todo iterate over the result using linting/compiler
@@ -61,8 +72,7 @@ app.webhooks.on("push", async (evt) => {
       fixes.push({ path, content: newContent });
     }
 
-    // todo create better branch names
-    const branchName = "savant/quickfix"; // Name of the branch for the fix
+    console.log("five");
 
     // Create a new branch based on the default branch (e.g., 'main')
     await octokit.rest.git.createRef({
@@ -71,6 +81,8 @@ app.webhooks.on("push", async (evt) => {
       ref: `refs/heads/${branchName}`,
       sha: evt.payload.ref, // Use the commit SHA from the push event
     });
+
+    console.log("six");
 
     for (const fix of fixes) {
       // Commit the changes to the new branch
@@ -86,19 +98,23 @@ app.webhooks.on("push", async (evt) => {
       });
     }
 
-    // Create a pull request
-    const pullRequest = await octokit.rest.pulls.create({
-      owner: owner.login,
-      repo: repository.name,
-      // todo better title
-      title: "Fix TypeScript Bug",
-      // todo write descriptive PR
-      // todo write PR according to templates
-      head: branchName,
-      // todo use branch specified by user and/or default branch
-      base: "main",
-    });
+    console.log("seven");
   }
+
+  // Create a pull request
+  const pullRequest = await octokit.rest.pulls.create({
+    owner: owner.login,
+    repo: repository.name,
+    // todo better title
+    title: "Fix TypeScript Bug",
+    // todo write descriptive PR
+    // todo write PR according to templates
+    head: branchName,
+    // todo use branch specified by user and/or default branch
+    base: "main",
+  });
+
+  console.log("eight");
 });
 
 export async function POST(req: NextRequest) {
