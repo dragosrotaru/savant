@@ -7,6 +7,7 @@ export async function GET(request: NextRequest) {
   if (installationId === null) {
     return NextResponse.error();
   }
+  console.log("gatting the repositores");
   const install = await app.getInstallationOctokit(Number(installationId));
   const repos = await install.graphql(`{
     viewer {
