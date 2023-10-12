@@ -4,7 +4,6 @@ import path from "path";
 
 const pemFilePath = path.join(
   process.cwd(),
-  "files",
   "savant-dev-ai.2023-10-12.private-key.pem"
 );
 const pemContent = fs.readFileSync(pemFilePath, "utf8");
