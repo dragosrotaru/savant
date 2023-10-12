@@ -1,4 +1,4 @@
-import { app } from "@/app/octokit";
+import { app } from "@/app/domain/octokit";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
