@@ -103,14 +103,17 @@ app.webhooks.on("push", async (evt) => {
 
 export async function POST(req: NextRequest) {
   try {
+    console.log("received");
     await app.webhooks.verifyAndReceive({
       id: req.headers.get("x-github-delivery") ?? "",
       signature: req.headers.get("x-hub-signature-256") ?? "",
       name: req.headers.get("x-github-event") as WebhookEventName,
       payload: await req.text(),
     });
+    console.log("verified and processed");
     return NextResponse.json({}, { status: 200 });
   } catch (error) {
+    console.log(error);
     return NextResponse.json({}, { status: 500 });
   }
 }
