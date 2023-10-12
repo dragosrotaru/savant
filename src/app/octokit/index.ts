@@ -1,7 +1,12 @@
 import fs from "fs";
 import { App } from "octokit";
+import path from "path";
 
-const pemFilePath = "savant-dev-ai.2023-10-12.private-key.pem";
+const pemFilePath = path.join(
+  process.cwd(),
+  "files",
+  "savant-dev-ai.2023-10-12.private-key.pem"
+);
 const pemContent = fs.readFileSync(pemFilePath, "utf8");
 
 const appId = process.env["GITHUB_APP_ID"];
