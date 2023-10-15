@@ -10,7 +10,7 @@ function isTypeScriptFile(filePath: string) {
 }
 
 app.webhooks.onError((error) => {
-  console.log(error);
+  process.stdout.write(error.toString());
 });
 
 app.webhooks.on("push", async (evt) => {
@@ -26,7 +26,7 @@ app.webhooks.on("push", async (evt) => {
   // todo only continue if rate limits not surpassed
   // todo only continue if user credits not consumed
 
-  console.log("one");
+  process.stdout.write("one");
 
   // Loop through the commits in the push event
 
@@ -40,7 +40,7 @@ app.webhooks.on("push", async (evt) => {
       // Only typescript is supported
       if (!isTypeScriptFile(path)) return;
 
-      console.log("two");
+      process.stdout.write("two");
 
       // Get the current file contents
       const content = await octokit.rest.repos.getContent({
@@ -49,7 +49,7 @@ app.webhooks.on("push", async (evt) => {
         path: path,
       });
 
-      console.log("thre");
+      process.stdout.write("thre");
 
       // Get Changes to code by ChatGPT
       const result = await requestCode(
@@ -61,7 +61,7 @@ app.webhooks.on("push", async (evt) => {
           `
       );
 
-      console.log("four");
+      process.stdout.write("four");
 
       if (!result.code) continue;
 
@@ -72,7 +72,7 @@ app.webhooks.on("push", async (evt) => {
       fixes.push({ path, content: newContent });
     }
 
-    console.log("five");
+    process.stdout.write("five");
 
     // Create a new branch based on the default branch (e.g., 'main')
     await octokit.rest.git.createRef({
@@ -82,7 +82,7 @@ app.webhooks.on("push", async (evt) => {
       sha: evt.payload.ref, // Use the commit SHA from the push event
     });
 
-    console.log("six");
+    process.stdout.write("six");
 
     for (const fix of fixes) {
       // Commit the changes to the new branch
@@ -98,7 +98,7 @@ app.webhooks.on("push", async (evt) => {
       });
     }
 
-    console.log("seven");
+    process.stdout.write("seven");
   }
 
   // Create a pull request
@@ -114,25 +114,25 @@ app.webhooks.on("push", async (evt) => {
     base: "main",
   });
 
-  console.log("eight");
+  process.stdout.write("eight");
 });
 
 export async function POST(req: NextRequest) {
   try {
-    console.log("received");
+    process.stdout.write("received");
     await app.webhooks.verifyAndReceive({
       id: req.headers.get("x-github-delivery") ?? "",
       signature: req.headers.get("x-hub-signature-256") ?? "",
       name: req.headers.get("x-github-event") as WebhookEventName,
       payload: await req.text(),
     });
-    console.log("verified and processed");
+    process.stdout.write("verified and processed");
     return NextResponse.json(
       { result: "worked great woptydoo" },
       { status: 200 }
     );
-  } catch (error) {
-    console.log(error);
+  } catch (error: any) {
+    process.stdout.write(error.toString());
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 }
