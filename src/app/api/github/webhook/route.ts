@@ -133,6 +133,9 @@ export async function POST(req: NextRequest) {
     );
   } catch (error) {
     console.log(error);
-    return NextResponse.json({ result: "failed woptydoo" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }
