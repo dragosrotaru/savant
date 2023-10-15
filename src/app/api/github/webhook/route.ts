@@ -121,10 +121,10 @@ export async function POST(req: NextRequest) {
   try {
     process.stdout.write("received");
     await app.webhooks.verifyAndReceive({
-      id: req.headers.get("x-github-delivery") ?? "",
-      signature: req.headers.get("x-hub-signature-256") ?? "",
-      name: req.headers.get("x-github-event") as WebhookEventName,
-      payload: await req.text(),
+      id: req.headers.get("X-GitHub-Delivery") ?? "",
+      name: req.headers.get("X-GitHub-Event") as WebhookEventName,
+      payload: JSON.stringify(await req.json()),
+      signature: req.headers.get("X-Hub-Signature-256") ?? "",
     });
     process.stdout.write("verified and processed");
     return NextResponse.json(
