@@ -1,4 +1,5 @@
 import { app } from "@/app/domain/octokit";
+import { requestCode } from "@/app/domain/openai";
 import { WebhookEventName } from "@octokit/webhooks-types";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -11,27 +12,47 @@ function isTypeScriptFile(filePath: string) {
 app.webhooks.onError(console.log);
 
 app.webhooks.on("push", async (evt) => {
-  const { commits } = evt.payload;
-  const { repository } = evt.payload;
+  const { payload, octokit } = evt;
+  const { commits } = payload;
+  const { repository } = payload;
   const { owner } = repository;
-  const octokit = evt.octokit;
 
   // todo create better branch names
-  const branchName = "savant/quickfix/" + Date.now().toString(); // Name of the branch for the fix
+  const branchName = "savant/quickfix/" + Date.now().toString();
 
-  // todo only continue if on repositories/branches enabled by user
-  // todo only continue if rate limits not surpassed
+  // Skip if push came from self, skip
+  if (payload.sender.login === "savant-dev-ai") {
+    console.log("push from self, skipping");
+    return;
+  }
+
+  // Skip if push is not on enabled repository
+  // todo implement this, currently just for myself to prototype
+  if (
+    repository.owner.login === "dragosrotaru" &&
+    repository.name === "savant"
+  ) {
+    console.log("push on own repository, skipping");
+    return;
+  }
+
+  // Skip if push is not on the default branch
+  if (!payload.base_ref || payload.base_ref !== repository.default_branch) {
+    // todo allow user to set push based fixes on other branches
+    console.log("push not on default branch, skipping");
+    return;
+  }
+
+  // todo only continue if user or openai imposed rate limits not surpassed
   // todo only continue if user credits not consumed
 
-  // Loop through the commits in the push event
-
+  // Loop through the commits in the push event and retrieve fixes
   for (const commit of commits) {
-    // todo also do for added files
-    const { modified } = commit;
-
+    const { modified, added } = commit;
+    const files = [...modified, ...added];
     const fixes: { path: string; content: string; sha: string }[] = [];
 
-    for (const path of modified) {
+    for (const path of files) {
       // Only typescript is supported
       if (!isTypeScriptFile(path)) return;
 
@@ -41,50 +62,55 @@ app.webhooks.on("push", async (evt) => {
         repo: repository.name,
         path,
       });
+      // todo handle error
 
-      if (Array.isArray(data) || data.type !== "file") {
-        return;
-      }
+      if (Array.isArray(data) || data.type !== "file") return;
 
       const oldContent = data.content;
       const sha = data.sha;
 
-      /*   // Get Changes to code by ChatGPT
+      // Get Changes to code by ChatGPT
+      // todo implement user selectable change prompts
+      // todo ask for a commit message incorporated in the response to extract
+      // todo handle error
       const result = await requestCode(
         ["typescript"],
         "be conservative in your changes"
       )(
-        `fix any issues you notice in the code shown below. return ONLY THE CODE, inside of a codeblock. Return absolutely no prose. IF There are no fixes, return the original code:
+        `fix any issues you notice in the code shown below. return ONLY THE CODE, inside of a typescript codeblock. Return absolutely no prose. if there are no fixes, return the phrase "No Fixes":
             ${oldContent}
           `
       );
- */
-      //if (!result.code) continue;
-
-      const newContent = "console.log('wow');"; // result.code;
-      // todo iterate over the result using linting/compiler
       // todo track usage of tokens by user
-      // todo check if changed, or implement better no change
-      fixes.push({ path, content: newContent, sha });
+      if (!result.code) continue;
+      // todo iterate over the result using linting/compiler
+      fixes.push({ path, content: result.code, sha });
     }
 
-    // Create a new branch based on the default branch (e.g., 'main')
+    if (fixes.length === 0) {
+      console.log("no fixes");
+      return;
+    }
+
+    // Create a new branch off the branch pushed to)
+    // todo handle error
     await octokit.rest.git.createRef({
       owner: owner.login,
       repo: repository.name,
       ref: `refs/heads/${branchName}`,
-      sha: evt.payload.after, // Use the commit SHA from the push event
+      sha: payload.after,
     });
 
+    // Commit each change to the new branch
+    // todo handle error
     for (const fix of fixes) {
-      // Commit the changes to the new branch
-      // todo implement different commit strategies
+      // todo support different commit strategies (across files, single commit for all files)
       await octokit.rest.repos.createOrUpdateFileContents({
         owner: owner.login,
         repo: repository.name,
         path: fix.path,
-        // todo include descriptive name changes
-        message: "Fix TypeScript bug",
+        // todo include message from chatgpt
+        message: "Savant Fixes",
         content: Buffer.from(fix.content).toString("base64"),
         branch: branchName,
         sha: fix.sha,
@@ -93,16 +119,15 @@ app.webhooks.on("push", async (evt) => {
   }
 
   // Create a pull request
-  const pullRequest = await octokit.rest.pulls.create({
+  await octokit.rest.pulls.create({
     owner: owner.login,
     repo: repository.name,
     // todo better title
-    title: "Fix TypeScript Bug",
+    title: "Savant Fixes",
     // todo write descriptive PR
     // todo write PR according to templates
     head: branchName,
-    // todo use branch specified by user and/or default branch
-    base: "main",
+    base: payload.base_ref,
   });
 });
 
