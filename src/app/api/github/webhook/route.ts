@@ -61,7 +61,7 @@ app.webhooks.on("push", async (evt) => {
       // todo check if changed, or implement better no change
       fixes.push({ path, content: newContent });
     }
-    /* 
+
     // Create a new branch based on the default branch (e.g., 'main')
     await octokit.rest.git.createRef({
       owner: owner.login,
@@ -69,7 +69,7 @@ app.webhooks.on("push", async (evt) => {
       ref: `refs/heads/${branchName}`,
       sha: evt.payload.ref, // Use the commit SHA from the push event
     });
-
+    /* 
     for (const fix of fixes) {
       // Commit the changes to the new branch
       // todo implement different commit strategies
