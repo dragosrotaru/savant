@@ -18,7 +18,7 @@ app.webhooks.on("push", async (evt) => {
   const octokit = evt.octokit;
 
   // todo create better branch names
-  const branchName = "savant/quickfix"; // Name of the branch for the fix
+  const branchName = "savant/quickfix/" + Date.now().toString(); // Name of the branch for the fix
 
   // todo only continue if on repositories/branches enabled by user
   // todo only continue if rate limits not surpassed
@@ -67,9 +67,9 @@ app.webhooks.on("push", async (evt) => {
       owner: owner.login,
       repo: repository.name,
       ref: `refs/heads/${branchName}`,
-      sha: evt.payload.ref, // Use the commit SHA from the push event
+      sha: evt.payload.after, // Use the commit SHA from the push event
     });
-    /* 
+
     for (const fix of fixes) {
       // Commit the changes to the new branch
       // todo implement different commit strategies
@@ -82,10 +82,10 @@ app.webhooks.on("push", async (evt) => {
         content: fix.content,
         branch: branchName,
       });
-    } */
+    }
   }
 
-  /* // Create a pull request
+  // Create a pull request
   const pullRequest = await octokit.rest.pulls.create({
     owner: owner.login,
     repo: repository.name,
@@ -96,7 +96,7 @@ app.webhooks.on("push", async (evt) => {
     head: branchName,
     // todo use branch specified by user and/or default branch
     base: "main",
-  }); */
+  });
 });
 
 export async function POST(req: NextRequest) {
