@@ -1,5 +1,6 @@
 import { app } from "@/app/domain/octokit";
 import { requestCode } from "@/app/domain/openai";
+import { WebhookEventName } from "@octokit/webhooks-types";
 import { NextRequest, NextResponse } from "next/server";
 
 // Helper function to check if an array of file paths contains TypeScript files
@@ -119,11 +120,12 @@ app.webhooks.on("push", async (evt) => {
 export async function POST(req: NextRequest) {
   try {
     process.stdout.write("received");
-    const webhookSecret = process.env["GITHUB_WEBHOOK_SECRET"];
-    if (!webhookSecret) {
-      throw new Error();
-    }
-    await app.webhooks.verify(JSON.stringify(await req.json()), webhookSecret);
+    await app.webhooks.verifyAndReceive({
+      id: req.headers.get("X-GitHub-Delivery") ?? "",
+      name: req.headers.get("X-GitHub-Event") as WebhookEventName,
+      payload: JSON.stringify(await req.json()),
+      signature: req.headers.get("X-Hub-Signature-256") ?? "",
+    });
     process.stdout.write("verified and processed");
     return NextResponse.json(
       { result: "worked great woptydoo" },
