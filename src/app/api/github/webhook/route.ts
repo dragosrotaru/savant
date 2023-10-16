@@ -30,18 +30,26 @@ app.webhooks.on("push", async (evt) => {
     // todo also do for added files
     const { modified } = commit;
 
-    const fixes: { path: string; content: string }[] = [];
+    const fixes: { path: string; content: string, sha: string }[] = [];
 
     for (const path of modified) {
       // Only typescript is supported
       if (!isTypeScriptFile(path)) return;
 
       // Get the current file contents
-      const content = await octokit.rest.repos.getContent({
+      const { data } = await octokit.rest.repos.getContent({
         owner: owner.login,
         repo: repository.name,
-        path: path,
+        path,,
       });
+
+      if (Array.isArray(data) || data.type !== "file") {
+        return;
+      }
+
+      const oldContent = data.content;
+      const sha = data.sha;
+
 
       // Get Changes to code by ChatGPT
       const result = await requestCode(
@@ -49,7 +57,7 @@ app.webhooks.on("push", async (evt) => {
         "be conservative in your changes"
       )(
         `fix any issues you notice in the code shown below. return ONLY THE CODE, inside of a codeblock. Return absolutely no prose. IF There are no fixes, return the original code:
-            ${content}
+            ${oldContent}
           `
       );
 
@@ -59,7 +67,7 @@ app.webhooks.on("push", async (evt) => {
       // todo iterate over the result using linting/compiler
       // todo track usage of tokens by user
       // todo check if changed, or implement better no change
-      fixes.push({ path, content: newContent });
+      fixes.push({ path, content: newContent,  sha });
     }
 
     // Create a new branch based on the default branch (e.g., 'main')
@@ -81,6 +89,7 @@ app.webhooks.on("push", async (evt) => {
         message: "Fix TypeScript bug",
         content: Buffer.from(fix.content).toString("base64"),
         branch: branchName,
+        sha: fix.sha
       });
     }
   }
