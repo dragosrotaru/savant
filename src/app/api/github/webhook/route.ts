@@ -1,4 +1,5 @@
 import { app } from "@/app/domain/octokit";
+import { requestCode } from "@/app/domain/openai";
 import { WebhookEventName } from "@octokit/webhooks-types";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -41,7 +42,7 @@ app.webhooks.on("push", async (evt) => {
         repo: repository.name,
         path: path,
       });
-      /* 
+
       // Get Changes to code by ChatGPT
       const result = await requestCode(
         ["typescript"],
@@ -58,7 +59,7 @@ app.webhooks.on("push", async (evt) => {
       // todo iterate over the result using linting/compiler
       // todo track usage of tokens by user
       // todo check if changed, or implement better no change
-      fixes.push({ path, content: newContent }); */
+      fixes.push({ path, content: newContent });
     }
     /* 
     // Create a new branch based on the default branch (e.g., 'main')
