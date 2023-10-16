@@ -30,7 +30,7 @@ app.webhooks.on("push", async (evt) => {
     // todo also do for added files
     const { modified } = commit;
 
-    const fixes: { path: string; content: string, sha: string }[] = [];
+    const fixes: { path: string; content: string; sha: string }[] = [];
 
     for (const path of modified) {
       // Only typescript is supported
@@ -40,7 +40,7 @@ app.webhooks.on("push", async (evt) => {
       const { data } = await octokit.rest.repos.getContent({
         owner: owner.login,
         repo: repository.name,
-        path,,
+        path,
       });
 
       if (Array.isArray(data) || data.type !== "file") {
@@ -49,7 +49,6 @@ app.webhooks.on("push", async (evt) => {
 
       const oldContent = data.content;
       const sha = data.sha;
-
 
       // Get Changes to code by ChatGPT
       const result = await requestCode(
@@ -67,7 +66,7 @@ app.webhooks.on("push", async (evt) => {
       // todo iterate over the result using linting/compiler
       // todo track usage of tokens by user
       // todo check if changed, or implement better no change
-      fixes.push({ path, content: newContent,  sha });
+      fixes.push({ path, content: newContent, sha });
     }
 
     // Create a new branch based on the default branch (e.g., 'main')
@@ -89,7 +88,7 @@ app.webhooks.on("push", async (evt) => {
         message: "Fix TypeScript bug",
         content: Buffer.from(fix.content).toString("base64"),
         branch: branchName,
-        sha: fix.sha
+        sha: fix.sha,
       });
     }
   }
