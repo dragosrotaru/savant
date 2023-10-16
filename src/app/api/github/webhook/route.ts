@@ -1,5 +1,4 @@
 import { app } from "@/app/domain/octokit";
-import { requestCode } from "@/app/domain/openai";
 import { WebhookEventName } from "@octokit/webhooks-types";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -50,7 +49,7 @@ app.webhooks.on("push", async (evt) => {
       const oldContent = data.content;
       const sha = data.sha;
 
-      // Get Changes to code by ChatGPT
+      /*   // Get Changes to code by ChatGPT
       const result = await requestCode(
         ["typescript"],
         "be conservative in your changes"
@@ -59,10 +58,10 @@ app.webhooks.on("push", async (evt) => {
             ${oldContent}
           `
       );
+ */
+      //if (!result.code) continue;
 
-      if (!result.code) continue;
-
-      const newContent = result.code;
+      const newContent = "console.log('wow');"; // result.code;
       // todo iterate over the result using linting/compiler
       // todo track usage of tokens by user
       // todo check if changed, or implement better no change
