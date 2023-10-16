@@ -79,7 +79,7 @@ app.webhooks.on("push", async (evt) => {
         path: fix.path,
         // todo include descriptive name changes
         message: "Fix TypeScript bug",
-        content: fix.content,
+        content: Buffer.from(fix.content).toString("base64"),
         branch: branchName,
       });
     }
@@ -93,7 +93,7 @@ app.webhooks.on("push", async (evt) => {
     title: "Fix TypeScript Bug",
     // todo write descriptive PR
     // todo write PR according to templates
-    head: branchName,
+    head: `refs/heads/${branchName}`,
     // todo use branch specified by user and/or default branch
     base: "main",
   });
