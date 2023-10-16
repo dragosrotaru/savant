@@ -120,11 +120,22 @@ app.webhooks.on("push", async (evt) => {
 export async function POST(req: NextRequest) {
   try {
     process.stdout.write("received");
+    const id = req.headers.get("X-GitHub-Delivery");
+    const name = req.headers.get("X-GitHub-Event");
+    const payload = JSON.stringify(await req.json());
+    const signature = req.headers.get("X-Hub-Signature-256");
+
+    if (!id || !name || !payload || !signature) {
+      throw new Error(
+        `missing webhook contents: ${id}, ${name}, ${payload}, ${signature}`
+      );
+    }
+
     await app.webhooks.verifyAndReceive({
-      id: req.headers.get("X-GitHub-Delivery") ?? "",
-      name: req.headers.get("X-GitHub-Event") as WebhookEventName,
-      payload: JSON.stringify(await req.json()),
-      signature: req.headers.get("X-Hub-Signature-256") ?? "",
+      id,
+      name: name as WebhookEventName,
+      payload,
+      signature,
     });
     process.stdout.write("verified and processed");
     return NextResponse.json(
