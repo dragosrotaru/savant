@@ -100,7 +100,7 @@ app.webhooks.on("push", async (evt) => {
     title: "Fix TypeScript Bug",
     // todo write descriptive PR
     // todo write PR according to templates
-    head: `refs/heads/${branchName}`,
+    head: branchName,
     // todo use branch specified by user and/or default branch
     base: "main",
   });
