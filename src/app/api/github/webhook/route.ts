@@ -1,5 +1,4 @@
 import { app } from "@/app/domain/octokit";
-import { requestCode } from "@/app/domain/openai";
 import { WebhookEventName } from "@octokit/webhooks-types";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -9,9 +8,7 @@ function isTypeScriptFile(filePath: string) {
   return tsFileRegex.test(filePath);
 }
 
-app.webhooks.onError((error) => {
-  process.stdout.write(error.toString());
-});
+// app.webhooks.onError((error) => {});
 
 app.webhooks.on("push", async (evt) => {
   const { commits } = evt.payload;
@@ -26,8 +23,6 @@ app.webhooks.on("push", async (evt) => {
   // todo only continue if rate limits not surpassed
   // todo only continue if user credits not consumed
 
-  process.stdout.write("one");
-
   // Loop through the commits in the push event
 
   for (const commit of commits) {
@@ -40,17 +35,13 @@ app.webhooks.on("push", async (evt) => {
       // Only typescript is supported
       if (!isTypeScriptFile(path)) return;
 
-      process.stdout.write("two");
-
       // Get the current file contents
       const content = await octokit.rest.repos.getContent({
         owner: owner.login,
         repo: repository.name,
         path: path,
       });
-
-      process.stdout.write("thre");
-
+      /* 
       // Get Changes to code by ChatGPT
       const result = await requestCode(
         ["typescript"],
@@ -61,19 +52,15 @@ app.webhooks.on("push", async (evt) => {
           `
       );
 
-      process.stdout.write("four");
-
       if (!result.code) continue;
 
       const newContent = result.code;
       // todo iterate over the result using linting/compiler
       // todo track usage of tokens by user
       // todo check if changed, or implement better no change
-      fixes.push({ path, content: newContent });
+      fixes.push({ path, content: newContent }); */
     }
-
-    process.stdout.write("five");
-
+    /* 
     // Create a new branch based on the default branch (e.g., 'main')
     await octokit.rest.git.createRef({
       owner: owner.login,
@@ -81,8 +68,6 @@ app.webhooks.on("push", async (evt) => {
       ref: `refs/heads/${branchName}`,
       sha: evt.payload.ref, // Use the commit SHA from the push event
     });
-
-    process.stdout.write("six");
 
     for (const fix of fixes) {
       // Commit the changes to the new branch
@@ -96,12 +81,10 @@ app.webhooks.on("push", async (evt) => {
         content: fix.content,
         branch: branchName,
       });
-    }
-
-    process.stdout.write("seven");
+    } */
   }
 
-  // Create a pull request
+  /* // Create a pull request
   const pullRequest = await octokit.rest.pulls.create({
     owner: owner.login,
     repo: repository.name,
@@ -112,14 +95,11 @@ app.webhooks.on("push", async (evt) => {
     head: branchName,
     // todo use branch specified by user and/or default branch
     base: "main",
-  });
-
-  process.stdout.write("eight");
+  }); */
 });
 
 export async function POST(req: NextRequest) {
   try {
-    process.stdout.write("received");
     const id = req.headers.get("X-GitHub-Delivery");
     const name = req.headers.get("X-GitHub-Event");
     const payload = JSON.stringify(await req.json());
@@ -137,13 +117,8 @@ export async function POST(req: NextRequest) {
       payload,
       signature,
     });
-    process.stdout.write("verified and processed");
-    return NextResponse.json(
-      { result: "worked great woptydoo" },
-      { status: 200 }
-    );
+    return NextResponse.json({ success: true }, { status: 200 });
   } catch (error: any) {
-    process.stdout.write(error.toString());
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 }
