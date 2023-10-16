@@ -9,7 +9,7 @@ function isTypeScriptFile(filePath: string) {
   return tsFileRegex.test(filePath);
 }
 
-// app.webhooks.onError((error) => {});
+app.webhooks.onError(console.log);
 
 app.webhooks.on("push", async (evt) => {
   const { commits } = evt.payload;
