@@ -118,10 +118,6 @@ app.webhooks.on("push", async (evt) => {
     }
   }
 
-  if (!payload.base_ref) {
-    throw new Error("no base ref");
-  }
-
   // Create a pull request
   await octokit.rest.pulls.create({
     owner: owner.login,
@@ -131,7 +127,7 @@ app.webhooks.on("push", async (evt) => {
     // todo write descriptive PR
     // todo write PR according to templates
     head: branchName,
-    base: payload.base_ref,
+    base: payload.base_ref || repository.default_branch,
   });
 });
 

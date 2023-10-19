@@ -30,7 +30,7 @@ export const extractFirstCodeBlock = (input: string, language: string[]) => {
       return { code, language: lang };
     }
   }
-  return { code: input, language: null };
+  return { code: null, language: null };
 };
 
 export const requestGPT = (system: string) => async (prompt: string) => {
@@ -57,8 +57,8 @@ export const requestCode =
     const { content, useage } = await requestGPT(system)(prompt);
     const extract = content ? extractFirstCodeBlock(content, language) : null;
     return {
-      code: extract?.code,
-      language: extract?.language,
+      code: extract?.code || null,
+      language: extract?.language || null,
       useage,
     };
   };
