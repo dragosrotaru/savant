@@ -37,7 +37,7 @@ app.webhooks.on("push", async (evt) => {
   }
 
   // Skip if push is not on the default branch
-  if (!payload.base_ref || payload.base_ref !== repository.default_branch) {
+  if (!(payload.ref === `refs/heads/${repository.default_branch}`)) {
     // todo allow user to set push based fixes on other branches
     console.log("push not on default branch, skipping");
     return;
