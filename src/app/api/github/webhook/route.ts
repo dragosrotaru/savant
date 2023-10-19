@@ -118,6 +118,10 @@ app.webhooks.on("push", async (evt) => {
     }
   }
 
+  if (!payload.base_ref) {
+    throw new Error("no base ref");
+  }
+
   // Create a pull request
   await octokit.rest.pulls.create({
     owner: owner.login,
