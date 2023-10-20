@@ -143,7 +143,7 @@ app.webhooks.on("pull_request.opened", async (evt) => {
 
   // Skip if push came from self, skip
   if (payload.sender.login === "savant-dev-ai") {
-    console.log("push from self, skipping");
+    console.log("PR from self, skipping");
     return;
   }
 
@@ -153,7 +153,7 @@ app.webhooks.on("pull_request.opened", async (evt) => {
     repository.owner.login === "dragosrotaru" &&
     repository.name === "savant"
   ) {
-    console.log("push on own repository, skipping");
+    console.log("PR on own repository, skipping");
     return;
   }
 
@@ -163,7 +163,7 @@ app.webhooks.on("pull_request.opened", async (evt) => {
   }
 
   const {
-    data: { commits, files },
+    data: { files },
   } = await octokit.rest.repos.compareCommits({
     owner: owner.login,
     repo: repository.name,
@@ -187,7 +187,13 @@ app.webhooks.on("pull_request.opened", async (evt) => {
     const result = await requestGPT(
       "you are a senior software engineer who cares about code quality, reliability, security and performance. You are friendly and informative."
     )(
-      `write a code review for the code patch below:
+      `write a code review for the following patch of a Pull Request:
+
+      title: ${pull_request.title}
+
+      body: ${pull_request.body}
+      
+      code patch:
           ${patch}
         `
     );
