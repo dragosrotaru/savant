@@ -1,5 +1,5 @@
 import { app } from "@/app/domain/octokit";
-import { requestCode } from "@/app/domain/openai";
+import { requestCode, requestGPT } from "@/app/domain/openai";
 import { WebhookEventName } from "@octokit/webhooks-types";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -10,6 +10,8 @@ function isTypeScriptFile(filePath: string) {
 }
 
 app.webhooks.onError(console.log);
+
+// todo implement token length detection
 
 app.webhooks.on("push", async (evt) => {
   const { payload, octokit } = evt;
@@ -54,7 +56,7 @@ app.webhooks.on("push", async (evt) => {
 
     for (const path of files) {
       // Only typescript is supported
-      if (!isTypeScriptFile(path)) return;
+      if (!isTypeScriptFile(path)) continue;
 
       // Get the current file contents
       const { data } = await octokit.rest.repos.getContent({
@@ -64,7 +66,7 @@ app.webhooks.on("push", async (evt) => {
       });
       // todo handle error
 
-      if (Array.isArray(data) || data.type !== "file") return;
+      if (Array.isArray(data) || data.type !== "file") continue;
 
       const oldContent = data.content;
       const sha = data.sha;
@@ -75,9 +77,9 @@ app.webhooks.on("push", async (evt) => {
       // todo handle error
       const result = await requestCode(
         ["typescript"],
-        "be conservative in your changes"
+        "return modern typescript code"
       )(
-        `fix any issues you notice in the code shown below. return ONLY THE CODE, inside of a typescript codeblock. Return absolutely no prose. if there are no fixes, return the phrase "No Fixes":
+        `fix all code quality/readabiliy issues, spelling errors, typos or bugs that exist in the code shown below. return only the code, inside of a typescript codeblock. Return absolutely no prose. if there are no fixes, return the phrase "No Fixes":
             ${oldContent}
           `
       );
@@ -129,6 +131,79 @@ app.webhooks.on("push", async (evt) => {
     head: branchName,
     base: payload.base_ref || repository.default_branch,
   });
+});
+
+// todo implement for updates to repo
+
+app.webhooks.on("pull_request.opened", async (evt) => {
+  const { payload, octokit } = evt;
+  const { pull_request } = payload;
+  const { repository } = payload;
+  const { owner } = repository;
+
+  // Skip if push came from self, skip
+  if (payload.sender.login === "savant-dev-ai") {
+    console.log("push from self, skipping");
+    return;
+  }
+
+  // Skip if push is not on enabled repository
+  // todo implement this, currently just for myself to prototype
+  if (
+    repository.owner.login === "dragosrotaru" &&
+    repository.name === "savant"
+  ) {
+    console.log("push on own repository, skipping");
+    return;
+  }
+
+  if (pull_request.locked || pull_request.draft) {
+    console.log("PR locked or draft, skipping");
+    return;
+  }
+
+  const {
+    data: { commits, files },
+  } = await octokit.rest.repos.compareCommits({
+    owner: owner.login,
+    repo: repository.name,
+    base: pull_request.base.sha,
+    head: pull_request.head.sha,
+  });
+
+  if (!files || files.length === 0) {
+    console.log("no files changes, skipping");
+    return;
+  }
+
+  for (const file of files) {
+    const { patch, status } = file;
+
+    // Only typescript is supported
+    if (!isTypeScriptFile(file.filename)) continue;
+    if (status !== "modified" && status !== "added") continue;
+    if (!patch) continue;
+
+    const result = await requestGPT(
+      "you are a senior software engineer who cares about code quality, reliability, security and performance. You are friendly and informative."
+    )(
+      `write a code review for the code patch below:
+          ${patch}
+        `
+    );
+
+    if (!result.content) continue;
+
+    await octokit.rest.pulls.createReviewComment({
+      owner: owner.login,
+      repo: repository.name,
+      pull_number: pull_request.number,
+      commit_id: pull_request.head.sha,
+      path: file.filename,
+      body: result.content,
+      line: patch.split("\n").length - 1,
+    });
+  }
 });
 
 export async function POST(req: NextRequest) {
