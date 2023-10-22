@@ -7,8 +7,13 @@ const webhookSecret = process.env["GITHUB_WEBHOOK_SECRET"];
 if (!appId || !privateKey || !webhookSecret) {
   throw new Error("github credentials are missing");
 }
-export const app = new App({
+
+const app = new App({
   appId,
   privateKey,
   webhooks: { secret: webhookSecret },
 });
+
+app.webhooks.onError(console.log);
+
+export { app };
